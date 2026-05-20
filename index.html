@@ -913,15 +913,24 @@
         }
 
         function loadImage(src, callback) {
-            const img = new Image();
-            img.onload = function() {
-                callback(img);
-            };
-            img.onerror = function() {
-                console.log('Failed to load: ' + src);
-                callback(null);
-            };
-            img.src = src;
+            let retries = 2;
+            function tryLoad() {
+                const img = new Image();
+                img.onload = function() {
+                    callback(img);
+                };
+                img.onerror = function() {
+                    if (retries > 0) {
+                        retries--;
+                        setTimeout(tryLoad, 800);
+                    } else {
+                        console.log('Failed to load: ' + src);
+                        callback(null);
+                    }
+                };
+                img.src = src;
+            }
+            tryLoad();
         }
 
         function checkLoadComplete() {
