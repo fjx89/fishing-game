@@ -608,6 +608,8 @@
         let loadedCount = 0;
         const totalResources = 4 + 46 + 7 + 9;
 
+        let bgLoaded = false;
+
         let currentWave = 0;
         let waveTimer = 0;
         const waveInterval = 0.3;
@@ -817,9 +819,14 @@
         function loadResources() {
             loadImage('Game_Bg.png', (img) => {
                 resources.bg = img;
+                bgLoaded = true;
+                renderBgOnly();
                 checkLoadComplete();
+                loadRemainingResources();
             });
+        }
 
+        function loadRemainingResources() {
             loadImage('wave_1.png', (img) => {
                 resources.wave1 = img;
                 if (img && waveDisplayWidth === 0) {
@@ -910,6 +917,13 @@
                 resources.grades.diamond = img;
                 checkLoadComplete();
             });
+        }
+
+        function renderBgOnly() {
+            if (resources.bg && gameWidth > 0) {
+                ctx.clearRect(0, 0, gameWidth, gameHeight);
+                ctx.drawImage(resources.bg, 0, 0, gameWidth, gameHeight);
+            }
         }
 
         function loadImage(src, callback) {
