@@ -1,0 +1,17 @@
+# Unity project folders (if any)
+Assets/
+Packages/
+ProjectSettings/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE files
+.idea/
+.vscode/
+*.suo
+*.user
+
+# Logs
+*.log
