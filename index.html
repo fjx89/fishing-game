@@ -642,7 +642,8 @@
             var button = document.getElementById('recordButton');
             var rect = canvas.getBoundingClientRect();
             button.style.top = (rect.top + 10) + 'px';
-            button.style.left = (rect.right - 100) + 'px';
+            button.style.right = (window.innerWidth - rect.right + 10) + 'px';
+            button.style.left = 'auto';
         }
 
         window.addEventListener('resize', resizeCanvas);
