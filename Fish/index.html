@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>钓鱼游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1a1a2e;
+        }
+
+        #gameContainer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #gameCanvas {
+            display: block;
+            background-color: #000;
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px 40px;
+            border-radius: 10px;
+        }
+
+        #actionButton {
+            position: fixed;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            padding: 15px 60px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.85), rgba(67, 160, 71, 0.85));
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+            animation: buttonPulse 2s infinite;
+        }
+
+        #actionButton:hover {
+            transform: translateX(-50%) scale(1.05);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.5);
+            background: linear-gradient(135deg, rgba(92, 199, 96, 0.9), rgba(83, 175, 87, 0.9));
+        }
+
+        #actionButton:active {
+            transform: translateX(-50%) scale(0.95);
+            box-shadow: 0 3px 10px rgba(76, 175, 80, 0.3);
+        }
+
+        @keyframes buttonPulse {
+            0%, 100% {
+                box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+            }
+            50% {
+                box-shadow: 0 6px 35px rgba(76, 175, 80, 0.7);
+            }
+        }
+
+        #resultOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        #resultContent {
+            background: linear-gradient(180deg, rgba(45, 90, 61, 0.95), rgba(26, 61, 42, 0.95));
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            color: white;
+            max-width: 85%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #fishImage {
+            width: 180px;
+            height: 180px;
+            margin: 20px auto;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #fishImage img {
+            max-width: 150px;
+            max-height: 150px;
+        }
+
+        #fishName {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        #fishWeight {
+            font-size: 24px;
+            color: #ffd700;
+        }
+
+        #fishStar {
+            font-size: 28px;
+            font-weight: bold;
+            order: 4;
+        }
+
+        #fishStar img {
+            height: 40px;
+            vertical-align: middle;
+        }
+
+        #failText {
+            font-size: 28px;
+            padding: 20px;
+        }
+
+        #continueHint {
+            font-size: 20px;
+            color: #ffd700;
+            font-weight: 600;
+            text-decoration: underline;
+            order: 6;
+        }
+
+        #starGuideBtn {
+            padding: 8px 20px;
+            font-size: 14px;
+            color: #ffd700;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            order: 5;
+        }
+
+        #starGuideOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+        }
+
+        #starGuideContent {
+            background: linear-gradient(180deg, rgba(30, 58, 138, 0.95), rgba(17, 24, 39, 0.95));
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #starGuideContent::-webkit-scrollbar {
+            display: none;
+        }
+
+        #starGuideTitle {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        .fishStarTable {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+        }
+
+        .fishStarTable th, .fishStarTable td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: left;
+        }
+
+        .fishStarTable th {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .starGradeImg {
+            height: 25px;
+            vertical-align: middle;
+        }
+
+        #closeGuideBtn {
+            margin-top: 20px;
+            padding: 12px 40px;
+            font-size: 18px;
+            color: white;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(67, 160, 71, 0.9));
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+
+        #recordButton {
+            position: fixed;
+            padding: 8px 20px;
+            font-size: 14px;
+            color: white;
+            background: transparent;
+            border: 2px solid rgba(255, 193, 7, 0.8);
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 100;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            white-space: nowrap;
+        }
+
+        #recordOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+        }
+
+        #recordContent {
+            background: linear-gradient(180deg, rgba(30, 58, 138, 0.95), rgba(17, 24, 39, 0.95));
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #recordContent::-webkit-scrollbar {
+            display: none;
+        }
+
+        #recordTitle {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        .recordItem {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .recordItem:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .recordFishName {
+            font-size: 18px;
+        }
+
+        .recordCount {
+            font-size: 18px;
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .recordDetail {
+            display: none;
+            padding: 10px;
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .recordDetailShow {
+            display: block;
+        }
+
+        .weightItem {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+
+        .weightRight {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .timeItem {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        #closeRecordBtn {
+            margin-top: 20px;
+            padding: 12px 40px;
+            font-size: 18px;
+            color: white;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(67, 160, 71, 0.9));
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+
+        .noRecord {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 40px;
+        }
+
+        #tutorialOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 400;
+        }
+
+        #tutorialContent {
+            background: linear-gradient(180deg, rgba(26, 61, 42, 0.98), rgba(17, 40, 28, 0.98));
+            border-radius: 20px;
+            padding: 35px 30px;
+            text-align: left;
+            color: white;
+            width: 88%;
+            max-width: 420px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        #tutorialTitle {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .tutorialItem {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        .tutorialNum {
+            font-weight: bold;
+            color: #ffd700;
+            font-size: 18px;
+            min-width: 28px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        #tutorialWish {
+            text-align: center;
+            font-size: 18px;
+            color: #ffd700;
+            font-weight: bold;
+            padding: 10px 0 5px 0;
+            letter-spacing: 2px;
+        }
+
+        #tutorialStartBtn {
+            margin-top: 5px;
+            padding: 14px 50px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(67, 160, 71, 0.9));
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            align-self: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        #tutorialStartBtn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+        }
+
+        #tutorialStartBtn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <button id="recordButton">🎣 鱼获记录</button>
+    </div>
+    <div id="loading">加载中... 0%</div>
+    <button id="actionButton">提杆</button>
+    <div id="resultOverlay">
+        <div id="resultContent">
+            <div id="fishImage"></div>
+            <div id="fishName"></div>
+            <div id="fishWeight"></div>
+            <div id="fishStar"></div>
+            <div id="failText" style="display: none;">没有中鱼，继续努力！</div>
+            <button id="starGuideBtn" style="display: none;">星级说明</button>
+            <div id="continueHint" style="display: none;">点击任意位置继续钓鱼</div>
+        </div>
+    </div>
+
+    <div id="starGuideOverlay">
+        <div id="starGuideContent">
+            <div id="starGuideTitle">🐟 鱼种星级评定标准</div>
+            <div id="starGuideTables"></div>
+            <button id="closeGuideBtn">关闭</button>
+        </div>
+    </div>
+
+    <div id="recordOverlay">
+        <div id="recordContent">
+            <div id="recordTitle">📋 鱼获记录</div>
+            <div id="recordList"></div>
+            <button id="closeRecordBtn">关闭</button>
+        </div>
+    </div>
+
+    <div id="tutorialOverlay">
+        <div id="tutorialContent">
+            <div id="tutorialTitle">🎣 游玩提示</div>
+            <div class="tutorialItem">
+                <span class="tutorialNum">1</span>
+                <span>本游戏模拟钓鱼时鱼漂的动作，需要根据钓鱼经验来判断是否可以提杆刺鱼</span>
+            </div>
+            <div class="tutorialItem">
+                <span class="tutorialNum">2</span>
+                <span>点击页面底部<strong style="color: #4caf50;">提杆</strong>按钮，即可提杆刺鱼，刺鱼后系统会提示是否中鱼，随后点击页面任意位置，可继续钓鱼</span>
+            </div>
+            <div class="tutorialItem">
+                <span class="tutorialNum">💡</span>
+                <span>小技巧：鱼漂出现明显快速动作，或动作行程较长时，中鱼概率较高</span>
+            </div>
+            <div class="tutorialItem">
+                <span class="tutorialNum">3</span>
+                <span>页面右上角有<strong style="color: #ffd700;">鱼获记录</strong>，可查看钓到的所有鱼获详情</span>
+            </div>
+            <div id="tutorialWish">祝各位钓友鱼获满满！</div>
+            <button id="tutorialStartBtn">开始钓鱼</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const loadingText = document.getElementById('loading');
+        const actionButton = document.getElementById('actionButton');
+        const resultOverlay = document.getElementById('resultOverlay');
+        const resultContent = document.getElementById('resultContent');
+        const fishImage = document.getElementById('fishImage');
+        const fishName = document.getElementById('fishName');
+        const fishWeight = document.getElementById('fishWeight');
+        const fishStar = document.getElementById('fishStar');
+        const failText = document.getElementById('failText');
+        const continueHint = document.getElementById('continueHint');
+        const starGuideBtn = document.getElementById('starGuideBtn');
+        const starGuideOverlay = document.getElementById('starGuideOverlay');
+        const starGuideTables = document.getElementById('starGuideTables');
+        const closeGuideBtn = document.getElementById('closeGuideBtn');
+        const recordButton = document.getElementById('recordButton');
+        const recordOverlay = document.getElementById('recordOverlay');
+        const recordList = document.getElementById('recordList');
+        const closeRecordBtn = document.getElementById('closeRecordBtn');
+        const tutorialOverlay = document.getElementById('tutorialOverlay');
+        const tutorialStartBtn = document.getElementById('tutorialStartBtn');
+
+        const TARGET_ASPECT_RATIO = 9 / 16;
+        let gameWidth = 360;
+        let gameHeight = 640;
+
+        const resources = {
+            bg: null,
+            wave1: null,
+            wave2: null,
+            wave3: null,
+            floatFrames: [],
+            fish: {
+                jiyu: null,
+                liyu: null,
+                qingyu: null,
+                pangxie: null,
+                longxia: null,
+                ziyu: null,
+                bianbian: null
+            },
+            grades: {
+                half_star: null,
+                one_star: null,
+                two_star: null,
+                three_star: null,
+                four_star: null,
+                five_star: null,
+                silver: null,
+                gold: null,
+                diamond: null
+            }
+        };
+
+        const fishConfig = {
+            jiyu: { name: '鲫鱼', minWeight: 50, maxWeight: 500, catchRate: 0.4 },
+            liyu: { name: '鲤鱼', minWeight: 100, maxWeight: 2000, catchRate: 0.25 },
+            qingyu: { name: '青鱼', minWeight: 100, maxWeight: 5000, catchRate: 0.05 },
+            pangxie: { name: '螃蟹', minWeight: 20, maxWeight: 400, catchRate: 0.2 },
+            longxia: { name: '龙虾', minWeight: 10, maxWeight: 100, catchRate: 0.35 },
+            ziyu: { name: '鲻鱼', minWeight: 200, maxWeight: 3000, catchRate: 0.15 },
+            bianbian: { name: '不可名状之物', minWeight: 250, maxWeight: 250, catchRate: 0.01, specialGrade: '夯报了，这你都能钓到' }
+        };
+
+        const starLevels = [
+            { level: '半星级', minPercent: 0, maxPercent: 10, key: 'half_star' },
+            { level: '一星级', minPercent: 10, maxPercent: 22, key: 'one_star' },
+            { level: '二星级', minPercent: 22, maxPercent: 35, key: 'two_star' },
+            { level: '三星级', minPercent: 35, maxPercent: 48, key: 'three_star' },
+            { level: '四星级', minPercent: 48, maxPercent: 62, key: 'four_star' },
+            { level: '五星级', minPercent: 62, maxPercent: 75, key: 'five_star' },
+            { level: '白银级', minPercent: 75, maxPercent: 88, key: 'silver' },
+            { level: '黄金级', minPercent: 88, maxPercent: 97, key: 'gold' },
+            { level: '钻石级', minPercent: 97, maxPercent: 101, key: 'diamond' }
+        ];
+
+        let waveDisplayWidth = 0;
+        let waveDisplayHeight = 0;
+
+        let loadedCount = 0;
+        const totalResources = 4 + 46 + 7 + 9;
+
+        let bgLoaded = false;
+
+        let currentWave = 0;
+        let waveTimer = 0;
+        const waveInterval = 0.3;
+
+        let currentFloatFrame = 0;
+        let floatFrameInterval = 0.05;
+        let floatTimer = 0;
+        let floatDirection = 1;
+        let floatTargetFrame = 0;
+        let isPlayingLongAnimation = false;
+
+        // === 停顿功能变量（测试功能，可回滚） ===
+        let isPausing = false;
+        let pauseTimer = 0;
+        let pauseDuration = 0;
+        // === 停顿功能变量结束 ===
+
+        let isFishing = true;
+        let isShowingResult = false;
+
+        let floatX = 0;
+        let floatY = 0;
+        let waveX = 0;
+        let waveY = 0;
+
+        let fishRecord = {};
+
+        function updateButtonPosition() {
+            var canvas = document.getElementById('gameCanvas');
+            var button = document.getElementById('recordButton');
+            var rect = canvas.getBoundingClientRect();
+            button.style.top = (rect.top + 10) + 'px';
+            button.style.right = (window.innerWidth - rect.right + 10) + 'px';
+            button.style.left = 'auto';
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('resize', updateButtonPosition);
+
+        function init() {
+            resizeCanvas();
+            updateButtonPosition();
+            actionButton.addEventListener('click', handleAction);
+            resultOverlay.addEventListener('click', handleResultClick);
+            starGuideBtn.addEventListener('click', showStarGuide);
+            closeGuideBtn.addEventListener('click', hideStarGuide);
+            starGuideOverlay.addEventListener('click', (e) => {
+                if (e.target === starGuideOverlay) hideStarGuide();
+            });
+            recordButton.addEventListener('click', showRecord);
+            closeRecordBtn.addEventListener('click', hideRecord);
+            recordOverlay.addEventListener('click', (e) => {
+                if (e.target === recordOverlay) hideRecord();
+            });
+            tutorialStartBtn.addEventListener('click', hideTutorial);
+            loadFishRecord();
+            loadResources();
+            checkTutorial();
+        }
+
+        function checkTutorial() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('tutorial')) {
+                localStorage.removeItem('tutorialShown');
+            }
+            const tutorialShown = localStorage.getItem('tutorialShown');
+            if (!tutorialShown) {
+                tutorialOverlay.style.display = 'flex';
+            }
+        }
+
+        function hideTutorial() {
+            localStorage.setItem('tutorialShown', 'true');
+            tutorialOverlay.style.display = 'none';
+        }
+
+        function loadFishRecord() {
+            const saved = localStorage.getItem('fishRecord');
+            if (saved) {
+                fishRecord = JSON.parse(saved);
+            }
+        }
+
+        function saveFishRecord() {
+            localStorage.setItem('fishRecord', JSON.stringify(fishRecord));
+        }
+
+        function showRecord() {
+            updateRecordList();
+            recordOverlay.style.display = 'flex';
+        }
+
+        function hideRecord() {
+            recordOverlay.style.display = 'none';
+        }
+
+        function updateRecordList() {
+            const entries = Object.entries(fishRecord);
+            if (entries.length === 0) {
+                recordList.innerHTML = '<div class="noRecord">还没有钓到任何鱼，继续加油！</div>';
+                return;
+            }
+
+            let html = '';
+            for (const [type, data] of entries) {
+                const config = fishConfig[type];
+                if (!config) continue;
+
+                html += `
+                    <div class="recordItem" onclick="toggleRecordDetail(this)">
+                        <span class="recordFishName">${config.name}</span>
+                        <span class="recordCount">${data.total} 尾</span>
+                    </div>
+                    <div class="recordDetail">
+                `;
+
+                const weightEntries = Object.entries(data.weights);
+                weightEntries.sort((a, b) => {
+                    const weightA = parseInt(a[0]);
+                    const weightB = parseInt(b[0]);
+                    return weightA - weightB;
+                });
+
+                for (const [weight, info] of weightEntries) {
+                    let count = typeof info === 'object' ? info.count : info;
+                    let times = typeof info === 'object' ? info.times : [];
+                    
+                    const fishWeight = parseInt(weight);
+                    const fish = {
+                        type: type,
+                        weight: fishWeight,
+                        minWeight: config.minWeight,
+                        maxWeight: config.maxWeight,
+                        specialGrade: config.specialGrade
+                    };
+                    const star = getStarLevel(fish);
+                    
+                    let starHtml = '';
+                    if (fish.specialGrade) {
+                        starHtml = `<span style="color: #ffd700; font-size: 14px;">${fish.specialGrade}</span>`;
+                    } else {
+                        starHtml = `<img src="Grade/${star.key}.png" alt="${star.level}" style="height: 20px; vertical-align: middle;" />`;
+                    }
+                    
+                    let timeHtml = '';
+                    if (times && times.length > 0) {
+                        timeHtml = times.map(t => `<div class="timeItem">${t}</div>`).join('');
+                    }
+                    
+                    html += `<div class="weightItem"><span>${weight}</span><div class="weightRight"><span>${starHtml}</span>${timeHtml}</div></div>`;
+                }
+                html += '</div>';
+            }
+            recordList.innerHTML = html;
+        }
+
+        function toggleRecordDetail(element) {
+            const detail = element.nextElementSibling;
+            if (detail && detail.classList.contains('recordDetail')) {
+                detail.classList.toggle('recordDetailShow');
+            }
+        }
+
+        function recordFishCatch(type, weight) {
+            if (!fishRecord[type]) {
+                fishRecord[type] = { total: 0, weights: {} };
+            }
+            fishRecord[type].total++;
+            const weightKey = weight + 'g';
+            if (!fishRecord[type].weights[weightKey]) {
+                fishRecord[type].weights[weightKey] = { count: 0, times: [] };
+            }
+            fishRecord[type].weights[weightKey].count++;
+            const now = new Date();
+            const timeStr = now.getFullYear() + '/' + (now.getMonth() + 1) + '/' + now.getDate() + ' ' + 
+                           String(now.getHours()).padStart(2, '0') + ':' + 
+                           String(now.getMinutes()).padStart(2, '0') + ':' + 
+                           String(now.getSeconds()).padStart(2, '0');
+            fishRecord[type].weights[weightKey].times.push(timeStr);
+            saveFishRecord();
+        }
+
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            const windowAspect = container.clientWidth / container.clientHeight;
+
+            if (windowAspect > TARGET_ASPECT_RATIO) {
+                gameHeight = container.clientHeight;
+                gameWidth = gameHeight * TARGET_ASPECT_RATIO;
+            } else {
+                gameWidth = container.clientWidth;
+                gameHeight = gameWidth / TARGET_ASPECT_RATIO;
+            }
+
+            canvas.width = gameWidth;
+            canvas.height = gameHeight;
+
+            floatX = gameWidth * 0.5;
+            floatY = gameHeight * 0.80;
+            waveX = gameWidth * 0.5;
+            waveY = gameHeight * 0.82;
+
+            const baseWaveScale = gameWidth * 0.25;
+            waveDisplayWidth = baseWaveScale;
+            waveDisplayHeight = baseWaveScale * 0.4;
+        }
+
+        function loadResources() {
+            loadImage('Game_Bg.png', (img) => {
+                resources.bg = img;
+                bgLoaded = true;
+                renderBgOnly();
+                checkLoadComplete();
+                loadRemainingResources();
+            });
+        }
+
+        function loadRemainingResources() {
+            loadImage('wave_1.png', (img) => {
+                resources.wave1 = img;
+                if (img && waveDisplayWidth === 0) {
+                    waveDisplayWidth = img.width * 0.1;
+                    waveDisplayHeight = img.height * 0.1;
+                }
+                checkLoadComplete();
+            });
+            loadImage('wave_2.png', (img) => {
+                resources.wave2 = img;
+                checkLoadComplete();
+            });
+            loadImage('wave_3.png', (img) => {
+                resources.wave3 = img;
+                checkLoadComplete();
+            });
+
+            for (let i = 1; i <= 46; i++) {
+                const frameNum = String(i).padStart(3, '0');
+                loadImage('float/float_' + frameNum + '.png', (img) => {
+                    resources.floatFrames[i - 1] = img;
+                    checkLoadComplete();
+                });
+            }
+
+            loadImage('Fish/jiyu.png', (img) => {
+                resources.fish.jiyu = img;
+                checkLoadComplete();
+            });
+            loadImage('Fish/liyu.png', (img) => {
+                resources.fish.liyu = img;
+                checkLoadComplete();
+            });
+            loadImage('Fish/qingyu.png', (img) => {
+                resources.fish.qingyu = img;
+                checkLoadComplete();
+            });
+            loadImage('Fish/pangxie.png', (img) => {
+                resources.fish.pangxie = img;
+                checkLoadComplete();
+            });
+            loadImage('Fish/longxia.png', (img) => {
+                resources.fish.longxia = img;
+                checkLoadComplete();
+            });
+            loadImage('Fish/ziyu.png', (img) => {
+                resources.fish.ziyu = img;
+                checkLoadComplete();
+            });
+            loadImage('Fish/bianbian.png', (img) => {
+                resources.fish.bianbian = img;
+                checkLoadComplete();
+            });
+
+            loadImage('Grade/half_star.png', (img) => {
+                resources.grades.half_star = img;
+                checkLoadComplete();
+            });
+            loadImage('Grade/one_star.png', (img) => {
+                resources.grades.one_star = img;
+                checkLoadComplete();
+            });
+            loadImage('Grade/two_star.png', (img) => {
+                resources.grades.two_star = img;
+                checkLoadComplete();
+            });
+            loadImage('Grade/three_star.png', (img) => {
+                resources.grades.three_star = img;
+                checkLoadComplete();
+            });
+            loadImage('Grade/four_star.png', (img) => {
+                resources.grades.four_star = img;
+                checkLoadComplete();
+            });
+            loadImage('Grade/five_star.png', (img) => {
+                resources.grades.five_star = img;
+                checkLoadComplete();
+            });
+            loadImage('Grade/silver.png', (img) => {
+                resources.grades.silver = img;
+                checkLoadComplete();
+            });
+            loadImage('Grade/gold.png', (img) => {
+                resources.grades.gold = img;
+                checkLoadComplete();
+            });
+            loadImage('Grade/diamond.png', (img) => {
+                resources.grades.diamond = img;
+                checkLoadComplete();
+            });
+        }
+
+        function renderBgOnly() {
+            if (resources.bg && gameWidth > 0) {
+                ctx.clearRect(0, 0, gameWidth, gameHeight);
+                ctx.drawImage(resources.bg, 0, 0, gameWidth, gameHeight);
+            }
+        }
+
+        function loadImage(src, callback) {
+            let retries = 2;
+            function tryLoad() {
+                const img = new Image();
+                img.onload = function() {
+                    callback(img);
+                };
+                img.onerror = function() {
+                    if (retries > 0) {
+                        retries--;
+                        setTimeout(tryLoad, 800);
+                    } else {
+                        console.log('Failed to load: ' + src);
+                        callback(null);
+                    }
+                };
+                img.src = src;
+            }
+            tryLoad();
+        }
+
+        function checkLoadComplete() {
+            loadedCount++;
+            const progress = Math.round((loadedCount / totalResources) * 100);
+            loadingText.innerHTML = '加载中... ' + progress + '%';
+
+            if (loadedCount >= totalResources) {
+                loadingText.style.display = 'none';
+                actionButton.style.display = 'block';
+                floatTargetFrame = getRandomTargetFrame();
+                isPlayingLongAnimation = floatTargetFrame >= resources.floatFrames.length - 1;
+                floatFrameInterval = getRandomFloatInterval(isPlayingLongAnimation);
+                gameLoop();
+            }
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            if (!isFishing || isShowingResult) return;
+
+            waveTimer += 1 / 60;
+            if (waveTimer >= waveInterval) {
+                waveTimer = 0;
+                currentWave = (currentWave + 1) % 3;
+            }
+
+            // === 停顿功能逻辑（测试功能，可回滚） ===
+            if (isPausing) {
+                pauseTimer += 1 / 60;
+                if (pauseTimer >= pauseDuration) {
+                    isPausing = false;
+                    pauseTimer = 0;
+                }
+                return; // 停顿期间不更新鱼漂帧
+            }
+            // === 停顿功能逻辑结束 ===
+
+            floatTimer += 1 / 60;
+            if (floatTimer >= floatFrameInterval) {
+                floatTimer = 0;
+                currentFloatFrame += floatDirection;
+
+                // === 停顿触发检查（测试功能，可回滚） ===
+                // 10%-30%几率触发停顿
+                if (!isPausing && Math.random() < 0.01) { // 1%几率
+                    isPausing = true;
+                    pauseDuration = 1 + Math.random(); // 1-2秒
+                    pauseTimer = 0;
+                }
+                // === 停顿触发检查结束 ===
+
+                if (floatDirection === 1 && currentFloatFrame >= floatTargetFrame) {
+                    floatDirection = -1;
+                    floatFrameInterval = getRandomFloatInterval();
+                } else if (floatDirection === -1 && currentFloatFrame <= 0) {
+                    floatDirection = 1;
+                    floatTargetFrame = getRandomTargetFrame();
+                    isPlayingLongAnimation = floatTargetFrame >= resources.floatFrames.length - 1;
+                    floatFrameInterval = getRandomFloatInterval(isPlayingLongAnimation);
+                }
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, gameWidth, gameHeight);
+
+            if (resources.bg) {
+                ctx.drawImage(resources.bg, 0, 0, gameWidth, gameHeight);
+            }
+
+            const waveImages = [resources.wave1, resources.wave2, resources.wave3];
+            const currentWaveImg = waveImages[currentWave];
+
+            if (currentWaveImg) {
+                const drawX = waveX - waveDisplayWidth * 0.5;
+                const drawY = waveY - waveDisplayHeight * 0.5;
+                ctx.drawImage(currentWaveImg, drawX, drawY, waveDisplayWidth, waveDisplayHeight);
+            }
+
+            const currentFloatImg = resources.floatFrames[currentFloatFrame];
+            if (currentFloatImg) {
+                const floatScale = Math.min(gameWidth / currentFloatImg.width, 0.15);
+                ctx.drawImage(
+                    currentFloatImg,
+                    floatX - currentFloatImg.width * floatScale * 0.5,
+                    floatY - currentFloatImg.height * floatScale * 0.5,
+                    currentFloatImg.width * floatScale,
+                    currentFloatImg.height * floatScale
+                );
+            }
+        }
+
+        function getRandomFloatInterval(isLongAnimation) {
+            if (isLongAnimation) {
+                return 0.015 + Math.random() * 0.015;
+            } else {
+                return 0.04 + Math.random() * 0.03;
+            }
+        }
+
+        function getRandomTargetFrame() {
+            const rand = Math.random();
+            const longAnimationChance = 0.1 + Math.random() * 0.1;
+
+            if (rand < longAnimationChance) {
+                return resources.floatFrames.length - 1;
+            } else {
+                return Math.floor(5 + Math.random() * 16);
+            }
+        }
+
+        function handleAction() {
+            if (isShowingResult) {
+                hideResult();
+                return;
+            }
+
+            isFishing = false;
+            actionButton.style.display = 'none';
+
+            const caught = checkCatch();
+
+            if (caught) {
+                showCatchResult(caught);
+            } else {
+                showFailResult();
+            }
+        }
+
+        function handleResultClick(e) {
+            hideResult();
+        }
+
+        function checkCatch() {
+            let baseChance = 0.1;
+
+            if (isPlayingLongAnimation) {
+                baseChance += 0.3;
+            }
+
+            if (floatFrameInterval < 0.03) {
+                baseChance += 0.2;
+            }
+
+            if (currentFloatFrame > 20) {
+                baseChance += 0.15;
+            }
+
+            const catchRoll = Math.random();
+
+            if (catchRoll < baseChance) {
+                return selectFish();
+            }
+
+            return null;
+        }
+
+        function selectFish() {
+            const rand = Math.random();
+
+            if (rand < 0.01) {
+                const config = fishConfig.bianbian;
+                return { type: 'bianbian', ...config, weight: 250 };
+            }
+
+            let cumulative = 0.01;
+            const totalNormalRate = 0.4 + 0.25 + 0.05 + 0.2 + 0.35 + 0.15;
+
+            for (const [key, config] of Object.entries(fishConfig)) {
+                if (key === 'bianbian') continue;
+                cumulative += config.catchRate / totalNormalRate * (1 - 0.01);
+                if (rand < cumulative) {
+                    const weight = Math.floor(config.minWeight + Math.random() * (config.maxWeight - config.minWeight));
+                    return { type: key, ...config, weight };
+                }
+            }
+
+            return null;
+        }
+
+        function getStarLevel(fish) {
+            if (fish.specialGrade) {
+                return { level: fish.specialGrade, key: null };
+            }
+
+            const range = fish.maxWeight - fish.minWeight;
+            const percent = ((fish.weight - fish.minWeight) / range) * 100;
+
+            for (const star of starLevels) {
+                if (percent >= star.minPercent && percent < star.maxPercent) {
+                    return star;
+                }
+            }
+            return starLevels[starLevels.length - 1];
+        }
+
+        function showCatchResult(fish) {
+            playSound('Sound/Get_fish.mp3', () => {
+                const star = getStarLevel(fish);
+
+                fishImage.innerHTML = `<img src="Fish/${fish.type}.png" />`;
+                fishName.textContent = fish.name;
+                fishWeight.textContent = `重量: ${fish.weight}g`;
+
+                if (fish.specialGrade) {
+                    fishStar.innerHTML = `<span style="color: #ffd700; font-size: 20px;">${fish.specialGrade}</span>`;
+                } else {
+                    fishStar.innerHTML = `<img src="Grade/${star.key}.png" alt="${star.level}" />`;
+                }
+
+                fishImage.style.display = 'flex';
+                fishName.style.display = 'block';
+                fishWeight.style.display = 'block';
+                fishStar.style.display = 'block';
+                failText.style.display = 'none';
+                starGuideBtn.style.display = 'block';
+                continueHint.style.display = 'block';
+
+                recordFishCatch(fish.type, fish.weight);
+
+                isShowingResult = true;
+                resultOverlay.style.display = 'flex';
+            });
+        }
+
+        function playSound(src, callback) {
+            const audio = new Audio(src);
+            audio.volume = 0.5;
+            audio.onended = callback;
+            audio.play().catch(() => {
+                if (callback) callback();
+            });
+        }
+
+        function showFailResult() {
+            playSound('Sound/shua.mp3', () => {
+                fishImage.style.display = 'none';
+                fishName.style.display = 'none';
+                fishWeight.style.display = 'none';
+                fishStar.style.display = 'none';
+                failText.style.display = 'block';
+                starGuideBtn.style.display = 'none';
+                continueHint.style.display = 'block';
+
+                isShowingResult = true;
+                resultOverlay.style.display = 'flex';
+            });
+        }
+
+        function showStarGuide() {
+            let html = '';
+
+            for (const [type, config] of Object.entries(fishConfig)) {
+                if (config.specialGrade) continue;
+
+                html += `
+                    <h3 style="color: #ffd700; margin-top: 20px; margin-bottom: 10px;">${config.name} (${config.minWeight}g - ${config.maxWeight}g)</h3>
+                    <table class="fishStarTable">
+                        <tr><th>星级</th><th>重量范围</th></tr>
+                `;
+
+                for (const star of starLevels) {
+                    const range = config.maxWeight - config.minWeight;
+                    const minWeight = Math.floor(config.minWeight + (star.minPercent / 100) * range);
+                    const maxWeight = star.maxPercent >= 100 ? config.maxWeight : Math.floor(config.minWeight + (star.maxPercent / 100) * range);
+
+                    html += `
+                        <tr>
+                            <td><img class="starGradeImg" src="Grade/${star.key}.png" alt="${star.level}" /></td>
+                            <td>${minWeight}g - ${maxWeight}g</td>
+                        </tr>
+                    `;
+                }
+
+                html += '</table>';
+            }
+
+            starGuideTables.innerHTML = html;
+            starGuideOverlay.style.display = 'flex';
+        }
+
+        function hideStarGuide() {
+            starGuideOverlay.style.display = 'none';
+        }
+
+        function hideResult() {
+            resultOverlay.style.display = 'none';
+            isShowingResult = false;
+            isFishing = true;
+            actionButton.textContent = '提杆';
+            actionButton.style.display = 'block';
+
+            // === 重置停顿状态（测试功能，可回滚） ===
+            isPausing = false;
+            pauseTimer = 0;
+            // === 重置停顿状态结束 ===
+
+            floatTargetFrame = getRandomTargetFrame();
+            isPlayingLongAnimation = floatTargetFrame >= resources.floatFrames.length - 1;
+            floatFrameInterval = getRandomFloatInterval(isPlayingLongAnimation);
+            currentFloatFrame = 0;
+            floatDirection = 1;
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

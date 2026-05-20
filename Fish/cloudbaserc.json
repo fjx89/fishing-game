@@ -1,0 +1,14 @@
+{
+  "version": "2.0",
+  "framework": {
+    "plugins": {
+      "client": {
+        "use": "@cloudbase/framework-plugin-website",
+        "inputs": {
+          "index": "index.html",
+          "dist": "."
+        }
+      }
+    }
+  }
+}
